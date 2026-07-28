@@ -33,7 +33,12 @@ def card_text(v) -> str:
         f"Оценка: {v['score']}/10 — {v['reason']}",
     ]
     if v["url"]:
-        lines.append(f'\n<a href="{v["url"]}">Открыть вакансию</a>')
+        try:
+            contact = v["contact"]
+        except (KeyError, IndexError):
+            contact = ""
+        label = "Написать рекрутёру" if contact else "Открыть вакансию"
+        lines.append(f'\n<a href="{v["url"]}">{label}</a>')
     return "\n".join(lines)
 
 
@@ -75,7 +80,14 @@ async def run_generation(uid: str, status_msg: Message):
     try:
         await status_msg.edit_text(
             f"⏳ <b>{title}</b>\nЧитаю описание вакансии…", parse_mode="HTML")
-        jd = await asyncio.to_thread(fetch_jd, v["url"])
+        try:
+            inline_jd = v["jd_inline"]
+        except (KeyError, IndexError):
+            inline_jd = ""
+        if inline_jd:
+            jd = inline_jd               # single-формат: текст уже в посте
+        else:
+            jd = await asyncio.to_thread(fetch_jd, v["url"])
 
         note = "по тексту вакансии" if jd else "по названию (описание не открылось)"
         await status_msg.edit_text(
