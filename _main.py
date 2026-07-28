@@ -8,6 +8,7 @@ from config import (BOT_TOKEN, CHANNELS, FIRST_RUN_LIMIT, MIN_SCORE, OWNER_ID,
 from fetcher import fetch_channel_html
 from scorer import score_post
 from tgparser import parse_page
+from tgparser2 import parse_page_single
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,20 +17,22 @@ logging.basicConfig(
 log = logging.getLogger("main")
 
 
-async def process_channel(channel: str, first_run: bool):
-    """Один проход по одному каналу."""
+def _parse(html, fmt):
+    return parse_page_single(html) if fmt == "single" else parse_page(html)
+
+
+async def process_channel(channel: str, fmt: str, first_run: bool):
     try:
         html = await asyncio.to_thread(fetch_channel_html, channel)
     except Exception as e:
         log.error("[%s] не смог скачать: %s", channel, e)
         return
 
-    posts = await asyncio.to_thread(parse_page, html)
-    log.info("[%s] постов с вакансиями: %d", channel, len(posts))
+    posts = await asyncio.to_thread(_parse, html, fmt)
+    log.info("[%s/%s] постов с вакансиями: %d", channel, fmt, len(posts))
 
     fresh = [p for p in posts if not db.post_seen(p.post_id)]
 
-    # на первом запуске канала берём только последние посты, не заваливаем лентой
     if first_run and len(fresh) > FIRST_RUN_LIMIT:
         log.info("[%s] первый запуск: беру %d последних", channel, FIRST_RUN_LIMIT)
         for p in fresh[:-FIRST_RUN_LIMIT]:
@@ -42,7 +45,7 @@ async def process_channel(channel: str, first_run: bool):
 
     for post in fresh:
         log.info("[%s] пост %s (%s): %d вакансий",
-                 channel, post.post_id, post.company, len(post.vacancies))
+                 channel, post.post_id, post.company or "-", len(post.vacancies))
         scores = await asyncio.to_thread(score_post, post)
 
         for v in post.vacancies:
@@ -61,11 +64,9 @@ async def process_channel(channel: str, first_run: bool):
 
 
 async def process_once():
-    """Обходит все каналы по очереди."""
-    # первый запуск для канала = у него ещё нет ни одного виденного поста
-    for channel in CHANNELS:
+    for channel, fmt in CHANNELS:
         first = not db.channel_has_seen(channel)
-        await process_channel(channel, first_run=first)
+        await process_channel(channel, fmt, first_run=first)
 
 
 async def poller():
@@ -83,7 +84,8 @@ async def main():
 
     db.init()
     log.info("старт: каналы %s, интервал %d сек, порог score %d",
-             ", ".join("@" + c for c in CHANNELS), POLL_INTERVAL, MIN_SCORE)
+             ", ".join("@%s(%s)" % (c, f) for c, f in CHANNELS),
+             POLL_INTERVAL, MIN_SCORE)
 
     asyncio.create_task(poller())
     await dp.start_polling(bot)
