@@ -38,8 +38,8 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 
 # --- GitHub Pages (Фаза 2) ---
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
-GITHUB_OWNER = os.getenv("GITHUB_OWNER", "spasionovartemiy-bot")
-GITHUB_REPO = os.getenv("GITHUB_REPO", "spasionovartemiy-bot.github.io")
+GITHUB_OWNER = os.getenv("GITHUB_OWNER", "spasenovartemiy")
+GITHUB_REPO = os.getenv("GITHUB_REPO", "spasenovartemiy.github.io")
 GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
 BASE_RESUME_FILE = os.getenv("BASE_RESUME_FILE", "artemiy-spasenov-pm.html")
 
