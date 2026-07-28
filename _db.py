@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS vacancies (
     company    TEXT,
     salary_raw TEXT,
     salary_max INTEGER,
+    jd_inline  TEXT DEFAULT '',
+    contact    TEXT DEFAULT '',
     score      INTEGER,
     reason     TEXT,
     status     TEXT DEFAULT 'new',      -- new | sent | selected | skipped | generated
@@ -61,10 +63,13 @@ def save_vacancy(v, score: int, reason: str):
     with conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO vacancies
-               (uid, post_id, title, url, company, salary_raw, salary_max, score, reason)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+               (uid, post_id, title, url, company, salary_raw, salary_max,
+                jd_inline, contact, score, reason)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (v.uid, v.post_id, v.title, v.url, v.company,
-             v.salary_raw, v.salary_max, score, reason),
+             v.salary_raw, v.salary_max,
+             getattr(v, "jd_inline", ""), getattr(v, "contact_label", ""),
+             score, reason),
         )
 
 
