@@ -3,8 +3,24 @@ import os
 # --- Telegram ---
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))          # твой user_id (@userinfobot)
-# один или несколько каналов через запятую, без @
-CHANNELS = [x.strip() for x in os.getenv("CHANNEL", "moskovskayarabota").split(",") if x.strip()]
+# каналы с указанием формата: "имя:формат" через запятую.
+#   pack   — пачка вакансий со ссылками (moskovskayarabota) — по умолчанию
+#   single — одна вакансия на пост, отклик рекрутёру (moskvarabota)
+def _parse_channels(raw):
+    out = []
+    for item in raw.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if ":" in item:
+            name, fmt = item.split(":", 1)
+            out.append((name.strip(), fmt.strip() or "pack"))
+        else:
+            out.append((item, "pack"))
+    return out
+
+
+CHANNELS = _parse_channels(os.getenv("CHANNEL", "moskovskayarabota"))
 
 # --- OpenRouter ---
 OPENROUTER_KEY = os.getenv("OPENROUTER_KEY", "")
