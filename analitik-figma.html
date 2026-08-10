@@ -711,6 +711,43 @@ section { padding: 130px 0; }
   border: 1px solid var(--line);
 }
 
+/* CERTIFICATES */
+.certs { margin-top: 52px; }
+.certs-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.certs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 56px; }
+.cert-item {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+  transition: background 0.25s ease, padding 0.25s ease;
+}
+.cert-item:hover { background: var(--bg-card); padding-left: 12px; padding-right: 12px; }
+.cert-year {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.cert-name { font-size: 15px; letter-spacing: -0.015em; line-height: 1.3; }
+.cert-org {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
 /* SKILLS */
 .skills-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; }
 .skill-group h4 {
@@ -871,6 +908,8 @@ footer .accent { color: var(--rust); }
   .edu-item { grid-template-columns: 1fr; gap: 8px; padding: 28px 0; }
   .edu-item:hover { padding-left: 0; padding-right: 0; }
   .edu-tag { text-align: left; }
+  .certs-grid { grid-template-columns: 1fr; gap: 0; }
+  .cert-item:hover { padding-left: 0; padding-right: 0; }
   .clients-row { grid-template-columns: 1fr; }
   .contact-grid { grid-template-columns: 1fr; gap: 40px; }
   .contact { padding: 110px 0 70px; }
@@ -1222,10 +1261,19 @@ footer .accent { color: var(--rust); }
   <div class="container">
     <div class="section-head reveal">
       <div class="section-label">04 · Образование</div>
-      <h2 class="section-title">Четыре программы<br>в <span class="italic sage">трёх университетах</span></h2>
+      <h2 class="section-title">Образование<br>и <span class="italic sage">квалификация</span></h2>
     </div>
 
     <div class="edu-list">
+      <div class="edu-item reveal">
+        <div class="edu-period">2026</div>
+        <div>
+          <div class="edu-uni">«Проектный спецназ» · Фёдор Афанасьев</div>
+          <div class="edu-degree">Сертификат · тренинг «Управление проектами»</div>
+        </div>
+        <div class="edu-tag"><span class="badge">новое</span></div>
+      </div>
+
       <div class="edu-item featured reveal">
         <div class="edu-period">— 2027</div>
         <div>
@@ -1250,7 +1298,7 @@ footer .accent { color: var(--rust); }
           <div class="edu-uni">РУДН им. П. Лумумбы</div>
           <div class="edu-degree">Магистр · рециклинг отходов производства и потребления</div>
         </div>
-        <div class="edu-tag">Москва</div>
+        <div class="edu-tag"><span class="badge subtle">диплом I степени</span></div>
       </div>
 
       <div class="edu-item reveal">
@@ -1260,6 +1308,54 @@ footer .accent { color: var(--rust); }
           <div class="edu-degree">Бакалавр · экология и природопользование</div>
         </div>
         <div class="edu-tag">Москва</div>
+      </div>
+    </div>
+
+    <div class="certs reveal">
+      <div class="certs-label">Повышение квалификации</div>
+      <div class="certs-grid">
+        <div class="cert-item">
+          <div class="cert-year">2023</div>
+          <div>
+            <div class="cert-name">Стань лучшим наставником</div>
+            <div class="cert-org">EcoStandard group · 100 баллов</div>
+          </div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-year">2021</div>
+          <div>
+            <div class="cert-name">Эффективные коммуникации: ориентация, поиск и принятие решения</div>
+            <div class="cert-org">EcoStandard group</div>
+          </div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-year">2021</div>
+          <div>
+            <div class="cert-name">Дизайн и структура презентации</div>
+            <div class="cert-org">EcoStandard group</div>
+          </div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-year">2020</div>
+          <div>
+            <div class="cert-name">Оценка профессиональных рисков</div>
+            <div class="cert-org">УМЦ «ЭКОСТАНДАРТ» · удостоверение о повышении квалификации</div>
+          </div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-year">2019</div>
+          <div>
+            <div class="cert-name">Erasmus+ KA107 · семестр обучения на английском</div>
+            <div class="cert-org">Catholic University in Ružomberok, Словакия</div>
+          </div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-year">2018</div>
+          <div>
+            <div class="cert-name">Курсы испанского языка</div>
+            <div class="cert-org">Институт Сервантеса, Москва</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
