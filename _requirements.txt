@@ -1,9 +1,0 @@
-aiogram==3.13.1
-requests==2.32.3
-beautifulsoup4==4.12.3
-weasyprint==69.0
-pydyf==0.12.1
-tinycss2==1.5.1
-cssselect2==0.9.0
-pyphen==0.17.2
-fonttools==4.62.1
