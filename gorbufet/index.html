@@ -16,30 +16,38 @@ body{background:var(--bg);color:var(--ink);font-family:'Onest',sans-serif;-webki
 .italic{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;}
 .rust{color:var(--rust);}
 .label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:22px;}
-header{padding:90px 0 60px;}
+header{padding:80px 0 56px;}
 .hero{display:grid;grid-template-columns:1.35fr 1fr;gap:56px;align-items:center;}
 h1{font-size:clamp(44px,6vw,74px);line-height:1.02;letter-spacing:-.02em;font-weight:700;margin-bottom:22px;}
-h1 .italic{font-weight:400;letter-spacing:-.01em;}
+h1 .italic{font-weight:400;}
 .role{font-size:17px;color:var(--muted);margin-bottom:26px;}
 .role b{color:var(--ink);font-weight:600;}
 .tagline{font-size:19px;line-height:1.62;color:#1f1f1f;max-width:34em;}
 .tagline strong{font-weight:600;}
 .portrait{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:18px;}
-section{padding:56px 0;border-top:1px solid var(--line);}
-h2{font-size:clamp(28px,3.4vw,40px);line-height:1.12;letter-spacing:-.015em;font-weight:700;margin-bottom:38px;}
+section{padding:54px 0;border-top:1px solid var(--line);}
+h2{font-size:clamp(28px,3.4vw,40px);line-height:1.12;letter-spacing:-.015em;font-weight:700;margin-bottom:36px;}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
 .card{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:26px 28px;}
+.ic-wrap{width:44px;height:44px;border-radius:12px;background:var(--rust-soft);color:var(--rust);
+  display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.ic-wrap.sm{width:38px;height:38px;border-radius:10px;flex-shrink:0;margin:0;}
+.ic{width:22px;height:22px;}
 .card .req{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:9px;}
 .card h3{font-size:19px;font-weight:600;margin-bottom:9px;line-height:1.3;}
 .card p{font-size:15px;color:var(--muted);}
+.fav{display:flex;gap:18px;align-items:flex-start;padding:20px 0;border-bottom:1px solid var(--line);}
+.fav:last-child{border-bottom:none;}
+.fav h4{font-size:18px;font-weight:600;margin-bottom:6px;}
+.fav p{font-size:15px;color:var(--muted);}
 .note{margin-top:26px;font-size:15px;color:var(--muted);max-width:44em;}
-.contact{padding:56px 0 90px;border-top:1px solid var(--line);}
+.contact{padding:54px 0 80px;border-top:1px solid var(--line);}
 .contact .row{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px;}
 .btn{display:inline-block;padding:14px 26px;border-radius:999px;font-size:15px;font-weight:500;text-decoration:none;}
 .btn-dark{background:var(--ink);color:#fff;}
 .btn-out{border:1px solid var(--line);color:var(--ink);background:var(--bg-card);}
-footer{padding:26px 0 60px;font-size:13px;color:#a3a3a3;}
-@media(max-width:860px){.hero{grid-template-columns:1fr;gap:32px;}.grid{grid-template-columns:1fr;}.container{padding:0 22px;}header{padding:56px 0 40px;}}
+footer{padding:24px 0 56px;font-size:13px;color:#a3a3a3;}
+@media(max-width:860px){.hero{grid-template-columns:1fr;gap:32px;}.grid{grid-template-columns:1fr;}.container{padding:0 22px;}header{padding:52px 0 36px;}}
 </style>
 </head>
 <body>
@@ -57,29 +65,14 @@ footer{padding:26px 0 60px;font-size:13px;color:#a3a3a3;}
 
 <section><div class="container">
   <h2>Почему я подхожу<br><span class="italic rust">на роль народного контроля</span></h2>
-  <div class="grid">
-    <div class="card">
-      <div class="req">Инспектировать под видом обычного гражданина</div>
-      <h3>Внешность обманчива</h3>
-      <p>Восемь лет захожу на чужую территорию, где меня не ждут с распростёртыми объятиями, и спокойно смотрю, как всё устроено на самом деле. Никакого напряжения в зале не создам.</p>
-    </div>
-    <div class="card">
-      <div class="req">Оценивать с пристрастием</div>
-      <h3>Профессиональная придирчивость</h3>
-      <p>Работа аудитора приучила замечать то, что остальные проходят взглядом: тон разговора, скорость реакции, детали, которые выдают отношение к делу. Отключить это уже не получается.</p>
-    </div>
-    <div class="card">
-      <div class="req">Составлять подробный честный рапорт</div>
-      <h3>Отчёты — моя профессия</h3>
-      <p>Пишу их каждую неделю: что проверял, что нашёл, что с этим делать. Формулирую так, чтобы можно было исправить, а не обидеться. Без воды и без лишней бюрократии.</p>
-    </div>
-    <div class="card">
-      <div class="req">Дегустировать и оценивать крепость</div>
-      <h3>Подхожу ответственно</h3>
-      <p>К шашлыку, пельменям и настойкам отношусь с уважением и готов проверять каждую партию столько раз, сколько потребует объективность результата.</p>
-    </div>
-  </div>
+  <div class="grid"><div class="card"><div class="ic-wrap"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="req">Инспектировать под видом обычного гражданина</div><h3>Внешность обманчива</h3><p>Восемь лет захожу на чужую территорию, где меня не ждут с распростёртыми объятиями, и спокойно смотрю, как всё устроено на самом деле. Никакого напряжения в зале не создам.</p></div><div class="card"><div class="ic-wrap"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="req">Оценивать с пристрастием</div><h3>Профессиональная придирчивость</h3><p>Работа аудитора приучила замечать то, что остальные проходят взглядом: тон разговора, скорость реакции, детали, которые выдают отношение к делу. Отключить это уже не получается.</p></div><div class="card"><div class="ic-wrap"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></div><div class="req">Составлять подробный честный рапорт</div><h3>Отчёты — моя профессия</h3><p>Пишу их каждую неделю: что проверял, что нашёл, что с этим делать. Формулирую так, чтобы можно было исправить, а не обидеться. Без воды и без лишней бюрократии.</p></div><div class="card"><div class="ic-wrap"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 15v6"/><path d="M5 4h14l-2 7a5 5 0 0 1-10 0Z"/></svg></div><div class="req">Дегустировать и оценивать крепость</div><h3>Подхожу ответственно</h3><p>К шашлыку, пельменям и настойкам отношусь с уважением и готов проверять каждую партию столько раз, сколько потребует объективность результата.</p></div></div>
   <p class="note">Отдельным плюсом: магистратура по экологии и природопользованию — за санитарное состояние кухни глаз тоже зацепится. Испанский B1, если вдруг понадобится проверить хамон.</p>
+</div></section>
+
+<section><div class="container">
+  <h2>Чем вы мне нравитесь<br><span class="italic rust">как постоянному гостю</span></h2>
+  <div class="fav"><div class="ic-wrap sm"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div><h4>Был во всех точках сети</h4><p>Шашлычная на Новокузнецкой, шашлычная на 2-й Тверской-Ямской, Алкобуфет на Сретенке и Пельменная. Разница между ними чувствуется, и это как раз то, что стоит держать под контролем.</p></div></div><div class="fav"><div class="ic-wrap sm"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-9.5A3.9 3.9 0 0 1 12 7a3.9 3.9 0 0 1 7 3.5C19 15.5 12 20 12 20Z"/></svg></div><div><h4>Любимое — помидоры с сыром и чесноком</h4><p>Простое блюдо, по которому сразу видно кухню: тут либо честно, либо никак. У вас честно. На втором месте бутерброды со шпротами и яйцом, на третьем — люля из баранины.</p></div></div><div class="fav"><div class="ic-wrap sm"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 15v6"/><path d="M5 4h14l-2 7a5 5 0 0 1-10 0Z"/></svg></div><div><h4>Из бара — сет настоек</h4><p>Шесть рюмок одного вкуса — правильный формат для того, кто собирается оценивать крепость системно, а не на глазок.</p></div></div>
+  <p class="note">Нравится, что у вас не притворяются: советская эстетика без музейной стерильности, порции честные, персонал разговаривает как с соседом, а не по скрипту. Именно поэтому проверять вас интересно — планка уже поставлена, и держать её сложнее, чем поднять.</p>
 </div></section>
 
 <div class="contact"><div class="container">
