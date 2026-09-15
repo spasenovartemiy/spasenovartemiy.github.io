@@ -1,0 +1,157 @@
+# Внешний сторож для бота tgjobs.
+#
+# Логика: бот раз в 15 минут кладёт метку времени в ветку heartbeat. Сторож
+# смотрит её возраст. Старше 45 минут - пишет в телеграм. Чтобы не спамить,
+# не чаще раза в час, пока не починится.
+
+name: heartbeat-watchdog
+
+on:
+  schedule:
+    # Раз в 15 минут. Actions не гарантируют точность: в часы пик запуск
+    # может задержаться минут на 15, изредка пропуститься совсем. Для задачи
+    # "сервер лёг" это терпимо, поэтому окно 45 минут, а не 20: три
+    # запланированных запуска подряд должны промолчать, прежде чем мы решим,
+    # что бот мёртв.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:        # кнопка для ручной проверки
+
+# нужно, чтобы записать отметку о последнем алерте в ветку heartbeat
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Проверить возраст heartbeat
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          HEARTBEAT_BRANCH: heartbeat
+          HEARTBEAT_PATH: heartbeat.json
+          STATE_PATH: alert-state.json
+          MAX_AGE_MIN: "45"
+          COOLDOWN_MIN: "60"
+        run: |
+          python3 - <<'PY'
+          import base64, json, os, sys, urllib.error, urllib.parse, urllib.request
+          from datetime import datetime, timezone
+
+          REPO     = os.environ["REPO"]
+          GH       = os.environ["GH_TOKEN"]
+          BRANCH   = os.environ["HEARTBEAT_BRANCH"]
+          HB_PATH  = os.environ["HEARTBEAT_PATH"]
+          ST_PATH  = os.environ["STATE_PATH"]
+          MAX_AGE  = int(os.environ["MAX_AGE_MIN"]) * 60
+          COOLDOWN = int(os.environ["COOLDOWN_MIN"]) * 60
+          TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
+          TG_CHAT  = os.environ.get("TG_CHAT_ID", "")
+
+          def gh(method, path, payload=None):
+              """Запрос к GitHub API. Возвращает (код, тело). API, а не raw:
+              raw отдаётся через CDN с кэшем, и свежесть метки была бы враньём."""
+              req = urllib.request.Request(
+                  "https://api.github.com/" + path, method=method,
+                  data=json.dumps(payload).encode() if payload is not None else None,
+                  headers={"Authorization": "Bearer " + GH,
+                           "Accept": "application/vnd.github+json",
+                           "X-GitHub-Api-Version": "2022-11-28",
+                           "Content-Type": "application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status, json.loads(r.read() or b"{}")
+              except urllib.error.HTTPError as e:
+                  return e.code, {}
+
+          def read_file(path):
+              code, body = gh("GET", f"repos/{REPO}/contents/"
+                                     f"{urllib.parse.quote(path)}?ref={BRANCH}")
+              if code != 200:
+                  return None, None
+              raw = base64.b64decode(body.get("content", "")).decode("utf-8", "replace")
+              return raw, body.get("sha")
+
+          def write_file(path, text, sha, message):
+              payload = {"message": message, "branch": BRANCH,
+                         "content": base64.b64encode(text.encode()).decode()}
+              if sha:
+                  payload["sha"] = sha
+              code, _ = gh("PUT", f"repos/{REPO}/contents/"
+                                  f"{urllib.parse.quote(path)}", payload)
+              if code not in (200, 201):
+                  print(f"::warning::не записал {path}, GitHub ответил {code}")
+
+          def telegram(text):
+              if not TG_TOKEN or not TG_CHAT:
+                  print("::error::нет секретов TG_BOT_TOKEN или TG_CHAT_ID")
+                  sys.exit(1)
+              data = urllib.parse.urlencode({
+                  "chat_id": TG_CHAT, "text": text,
+                  "parse_mode": "HTML", "disable_web_page_preview": "true",
+              }).encode()
+              req = urllib.request.Request(
+                  f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage", data=data)
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  r.read()
+
+          now = datetime.now(timezone.utc)
+
+          # 1. читаем метку
+          raw, _ = read_file(HB_PATH)
+          if raw is None:
+              problem = (f"heartbeat не найден: нет файла {HB_PATH} "
+                         f"в ветке {BRANCH}")
+              age = None
+          else:
+              try:
+                  hb = json.loads(raw)
+                  ts = datetime.strptime(hb["ts"], "%Y-%m-%dT%H:%M:%SZ").replace(
+                      tzinfo=timezone.utc)
+                  age = (now - ts).total_seconds()
+              except Exception as e:
+                  problem = f"heartbeat не разобрался: {type(e).__name__}: {e}"
+                  age = None
+              else:
+                  if age <= MAX_AGE:
+                      print(f"ок: метка обновлена {int(age // 60)} мин назад, "
+                            f"статус {hb.get('status')}, "
+                            f"каналов {hb.get('channels_read')}/"
+                            f"{hb.get('channels_total')}")
+                      sys.exit(0)
+                  problem = (f"бот молчит {int(age // 60)} мин "
+                             f"(порог {MAX_AGE // 60} мин)\n"
+                             f"последняя метка: {hb['ts']}")
+
+          # 2. проблема есть. Не спамим: не чаще раза в COOLDOWN
+          state_raw, state_sha = read_file(ST_PATH)
+          if state_raw:
+              try:
+                  last = datetime.strptime(json.loads(state_raw)["ts"],
+                                           "%Y-%m-%dT%H:%M:%SZ").replace(
+                                               tzinfo=timezone.utc)
+                  since = (now - last).total_seconds()
+                  if since < COOLDOWN:
+                      print(f"проблема есть, но прошлый алерт был "
+                            f"{int(since // 60)} мин назад, молчу "
+                            f"(пауза {COOLDOWN // 60} мин)")
+                      sys.exit(0)
+              except Exception as e:
+                  print(f"::warning::не разобрал {ST_PATH}: {e}")
+
+          # 3. шлём и запоминаем время
+          print(f"::warning::{problem}")
+          telegram(
+              "🔴 <b>Бот tgjobs не отвечает</b>\n"
+              f"<code>{problem}</code>\n\n"
+              "Проверить: <code>docker compose logs --tail 50 tgjobs</code>\n"
+              f"<i>Следующее напоминание не раньше чем через "
+              f"{COOLDOWN // 60} мин.</i>")
+          write_file(ST_PATH,
+                     json.dumps({"ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                 "problem": problem}, ensure_ascii=False) + "\n",
+                     state_sha, "watchdog: отметка об алерте")
+          print("алерт отправлен")
+          PY
