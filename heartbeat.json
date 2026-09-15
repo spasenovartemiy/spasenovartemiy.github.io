@@ -1,8 +1,8 @@
 {
-  "ts": "2026-09-15T15:04:10Z",
+  "ts": "2026-09-15T15:19:15Z",
   "cycle": "channels",
   "status": "ok",
   "channels_read": 6,
   "channels_total": 6,
-  "uptime_sec": 3
+  "uptime_sec": 908
 }
