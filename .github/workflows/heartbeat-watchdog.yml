@@ -1,22 +1,15 @@
-# Внешний сторож для бота tgjobs.
-#
-# Логика: бот раз в 15 минут кладёт метку времени в ветку heartbeat. Сторож
-# смотрит её возраст. Старше 45 минут - пишет в телеграм. Чтобы не спамить,
-# не чаще раза в час, пока не починится.
-
 name: heartbeat-watchdog
 
 on:
   schedule:
-    # Раз в 15 минут. Actions не гарантируют точность: в часы пик запуск
-    # может задержаться минут на 15, изредка пропуститься совсем. Для задачи
-    # "сервер лёг" это терпимо, поэтому окно 45 минут, а не 20: три
-    # запланированных запуска подряд должны промолчать, прежде чем мы решим,
-    # что бот мёртв.
     - cron: "*/15 * * * *"
-  workflow_dispatch:        # кнопка для ручной проверки
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Проверить доставку: отправить тестовое сообщение и выйти"
+        type: boolean
+        default: false
 
-# нужно, чтобы записать отметку о последнем алерте в ветку heartbeat
 permissions:
   contents: write
 
@@ -35,6 +28,7 @@ jobs:
           STATE_PATH: alert-state.json
           MAX_AGE_MIN: "45"
           COOLDOWN_MIN: "60"
+          TEST_ONLY: ${{ inputs.test }}
         run: |
           python3 - <<'PY'
           import base64, json, os, sys, urllib.error, urllib.parse, urllib.request
@@ -49,10 +43,9 @@ jobs:
           COOLDOWN = int(os.environ["COOLDOWN_MIN"]) * 60
           TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
           TG_CHAT  = os.environ.get("TG_CHAT_ID", "")
+          TEST     = os.environ.get("TEST_ONLY", "").lower() == "true"
 
           def gh(method, path, payload=None):
-              """Запрос к GitHub API. Возвращает (код, тело). API, а не raw:
-              raw отдаётся через CDN с кэшем, и свежесть метки была бы враньём."""
               req = urllib.request.Request(
                   "https://api.github.com/" + path, method=method,
                   data=json.dumps(payload).encode() if payload is not None else None,
@@ -86,7 +79,10 @@ jobs:
 
           def telegram(text):
               if not TG_TOKEN or not TG_CHAT:
-                  print("::error::нет секретов TG_BOT_TOKEN или TG_CHAT_ID")
+                  print("::error::секретов TG_BOT_TOKEN и TG_CHAT_ID нет в этом "
+                        "репозитории. Settings -> Secrets and variables -> "
+                        "Actions -> New repository secret. Вкладка именно "
+                        "Actions, не Codespaces и не Dependabot.")
                   sys.exit(1)
               data = urllib.parse.urlencode({
                   "chat_id": TG_CHAT, "text": text,
@@ -94,12 +90,39 @@ jobs:
               }).encode()
               req = urllib.request.Request(
                   f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage", data=data)
-              with urllib.request.urlopen(req, timeout=30) as r:
-                  r.read()
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      json.loads(r.read() or b"{}")
+              except urllib.error.HTTPError as e:
+                  body = {}
+                  try:
+                      body = json.loads(e.read() or b"{}")
+                  except Exception:
+                      pass
+                  desc = body.get("description", "")
+                  hint = ""
+                  if e.code == 401:
+                      hint = " Токен бота неверный или отозван."
+                  elif e.code == 403:
+                      hint = (" Напишите боту /start со своего аккаунта: "
+                              "телеграм не даёт боту писать первым.")
+                  elif e.code == 400 and "chat not found" in desc.lower():
+                      hint = " Проверьте TG_CHAT_ID, это числовой user_id."
+                  print(f"::error::телеграм отказал: HTTP {e.code} {desc}.{hint}")
+                  sys.exit(1)
+              except Exception as e:
+                  print(f"::error::телеграм недоступен: {type(e).__name__}: {e}")
+                  sys.exit(1)
+
+          if TEST:
+              telegram("✅ <b>Проверка сторожа</b>\n"
+                       "Секреты на месте, доставка работает. "
+                       "Это тестовое сообщение, с ботом всё в порядке.")
+              print("тестовое сообщение отправлено")
+              sys.exit(0)
 
           now = datetime.now(timezone.utc)
 
-          # 1. читаем метку
           raw, _ = read_file(HB_PATH)
           if raw is None:
               problem = (f"heartbeat не найден: нет файла {HB_PATH} "
@@ -125,7 +148,6 @@ jobs:
                              f"(порог {MAX_AGE // 60} мин)\n"
                              f"последняя метка: {hb['ts']}")
 
-          # 2. проблема есть. Не спамим: не чаще раза в COOLDOWN
           state_raw, state_sha = read_file(ST_PATH)
           if state_raw:
               try:
@@ -141,7 +163,6 @@ jobs:
               except Exception as e:
                   print(f"::warning::не разобрал {ST_PATH}: {e}")
 
-          # 3. шлём и запоминаем время
           print(f"::warning::{problem}")
           telegram(
               "🔴 <b>Бот tgjobs не отвечает</b>\n"
