@@ -1,15 +1,46 @@
+# Внешний сторож для двух ботов: tgjobs и «Вточку CV».
+#
+# ЭТОТ ФАЙЛ ЖИВЁТ НЕ ЗДЕСЬ. Ставить его надо в репозиторий
+# spasenovartemiy/spasenovartemiy.github.io, ветка main, путь
+# .github/workflows/heartbeat-watchdog.yml — там же, где он лежит сейчас
+# для одного бота. Здесь копия под версионным контролем, рядом с ботом,
+# который пишет вторую метку (см. heartbeat.py).
+#
+# Расписание запускает workflow только с ВЕТКИ ПО УМОЛЧАНИЮ, поэтому main.
+#
+# Логика прежняя: бот раз в 15 минут кладёт метку времени, сторож смотрит
+# её возраст, старше 45 минут — пишет в телеграм, не чаще раза в час.
+# Новое — проверок стало две, и каждая со своей меткой, своей паузой и
+# своим текстом.
+#
+# ПОЧЕМУ ВТОРАЯ МЕТКА ЛЕЖИТ В ЧУЖОМ РЕПОЗИТОРИИ. Токен «Вточку CV» имеет
+# права на запись только в свой vtochku-cv/vtochku-cv.github.io; в этом
+# репозитории у него чтение. Заводить второй токен ради метки — лишний
+# секрет на диске бота. Репозиторий «Вточку CV» публичный, а чтение
+# публичного файла прав не требует: `github.token` справится.
+#
+# Отметки о последних алертах пишутся всегда СЮДА, в ветку heartbeat
+# этого репозитория: туда у сторожа права есть, и складывать состояние в
+# чужой репозиторий незачем.
+
 name: heartbeat-watchdog
 
 on:
   schedule:
+    # Раз в 15 минут. Actions не гарантируют точность: в часы пик запуск
+    # может задержаться минут на 15, изредка пропуститься совсем. Для задачи
+    # "сервер лёг" это терпимо, поэтому окно 45 минут, а не 20: три
+    # запланированных запуска подряд должны промолчать, прежде чем мы решим,
+    # что бот мёртв.
     - cron: "*/15 * * * *"
-  workflow_dispatch:
+  workflow_dispatch:        # кнопка для ручной проверки
     inputs:
       test:
         description: "Проверить доставку: отправить тестовое сообщение и выйти"
         type: boolean
         default: false
 
+# нужно, чтобы записать отметку о последнем алерте в ветку heartbeat
 permissions:
   contents: write
 
@@ -17,18 +48,28 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Проверить возраст heartbeat
+      - name: Проверить возраст меток
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           HEARTBEAT_BRANCH: heartbeat
-          HEARTBEAT_PATH: heartbeat.json
-          STATE_PATH: alert-state.json
           MAX_AGE_MIN: "45"
           COOLDOWN_MIN: "60"
           TEST_ONLY: ${{ inputs.test }}
+          # Проверки: имя, репозиторий метки (пусто — этот же), файл
+          # состояния (всегда в этом репозитории) и подсказка, куда
+          # смотреть, когда бот молчит.
+          CHECKS: >-
+            [
+              {"name": "tgjobs", "repo": "", "path": "heartbeat.json",
+               "state": "alert-state.json",
+               "logs": "docker compose logs --tail 50 tgjobs"},
+              {"name": "Вточку CV", "repo": "vtochku-cv/vtochku-cv.github.io",
+               "path": "heartbeat.json", "state": "alert-state-cv.json",
+               "logs": "docker compose logs --tail 50 resumebot"}
+            ]
         run: |
           python3 - <<'PY'
           import base64, json, os, sys, urllib.error, urllib.parse, urllib.request
@@ -37,15 +78,22 @@ jobs:
           REPO     = os.environ["REPO"]
           GH       = os.environ["GH_TOKEN"]
           BRANCH   = os.environ["HEARTBEAT_BRANCH"]
-          HB_PATH  = os.environ["HEARTBEAT_PATH"]
-          ST_PATH  = os.environ["STATE_PATH"]
           MAX_AGE  = int(os.environ["MAX_AGE_MIN"]) * 60
           COOLDOWN = int(os.environ["COOLDOWN_MIN"]) * 60
-          TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
-          TG_CHAT  = os.environ.get("TG_CHAT_ID", "")
+          # `.strip()` не косметика. 16 сентября в секрет попал лишний
+          # пробельный знак при вставке, и urllib отказался собирать
+          # адрес: «URL can't contain control characters». Сторож при
+          # этом считался живым — он падал только в тот момент, когда
+          # надо было звонить. Колокол, который не звонит, хуже
+          # отсутствия колокола, поэтому мусор по краям срезаем сами.
+          TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "").strip()
+          TG_CHAT  = os.environ.get("TG_CHAT_ID", "").strip()
           TEST     = os.environ.get("TEST_ONLY", "").lower() == "true"
+          CHECKS   = json.loads(os.environ["CHECKS"])
 
           def gh(method, path, payload=None):
+              """Запрос к GitHub API. Возвращает (код, тело). API, а не raw:
+              raw отдаётся через CDN с кэшем, и свежесть метки была бы враньём."""
               req = urllib.request.Request(
                   "https://api.github.com/" + path, method=method,
                   data=json.dumps(payload).encode() if payload is not None else None,
@@ -59,8 +107,8 @@ jobs:
               except urllib.error.HTTPError as e:
                   return e.code, {}
 
-          def read_file(path):
-              code, body = gh("GET", f"repos/{REPO}/contents/"
+          def read_file(path, repo=None):
+              code, body = gh("GET", f"repos/{repo or REPO}/contents/"
                                      f"{urllib.parse.quote(path)}?ref={BRANCH}")
               if code != 200:
                   return None, None
@@ -78,6 +126,9 @@ jobs:
                   print(f"::warning::не записал {path}, GitHub ответил {code}")
 
           def telegram(text):
+              """Отправка в телеграм. Ошибку показываем словами самого телеграма:
+              без этого 403 "бот не может начать переписку" выглядел бы голым
+              трейсбеком, по которому непонятно, что делать."""
               if not TG_TOKEN or not TG_CHAT:
                   print("::error::секретов TG_BOT_TOKEN и TG_CHAT_ID нет в этом "
                         "репозитории. Settings -> Secrets and variables -> "
@@ -117,62 +168,71 @@ jobs:
           if TEST:
               telegram("✅ <b>Проверка сторожа</b>\n"
                        "Секреты на месте, доставка работает. "
-                       "Это тестовое сообщение, с ботом всё в порядке.")
+                       f"Под присмотром: {', '.join(c['name'] for c in CHECKS)}.")
               print("тестовое сообщение отправлено")
               sys.exit(0)
 
           now = datetime.now(timezone.utc)
 
-          raw, _ = read_file(HB_PATH)
-          if raw is None:
-              problem = (f"heartbeat не найден: нет файла {HB_PATH} "
-                         f"в ветке {BRANCH}")
-              age = None
-          else:
+          def check_one(c):
+              """Одна проверка. Возвращает текст проблемы или None.
+
+              Проблема у одного бота не отменяет проверку второго, поэтому
+              каждая идёт своим кругом и со своей паузой: молчание tgjobs не
+              должно глушить алерт про «Вточку CV»."""
+              raw, _ = read_file(c["path"], c.get("repo") or None)
+              where = c.get("repo") or REPO
+              if raw is None:
+                  return (f"heartbeat не найден: нет файла {c['path']} "
+                          f"в ветке {BRANCH} репозитория {where}")
               try:
                   hb = json.loads(raw)
                   ts = datetime.strptime(hb["ts"], "%Y-%m-%dT%H:%M:%SZ").replace(
                       tzinfo=timezone.utc)
-                  age = (now - ts).total_seconds()
               except Exception as e:
-                  problem = f"heartbeat не разобрался: {type(e).__name__}: {e}"
-                  age = None
-              else:
-                  if age <= MAX_AGE:
-                      print(f"ок: метка обновлена {int(age // 60)} мин назад, "
-                            f"статус {hb.get('status')}, "
-                            f"каналов {hb.get('channels_read')}/"
-                            f"{hb.get('channels_total')}")
-                      sys.exit(0)
-                  problem = (f"бот молчит {int(age // 60)} мин "
-                             f"(порог {MAX_AGE // 60} мин)\n"
-                             f"последняя метка: {hb['ts']}")
+                  return f"heartbeat не разобрался: {type(e).__name__}: {e}"
+              age = (now - ts).total_seconds()
+              if age <= MAX_AGE:
+                  print(f"{c['name']}: ок, метка обновлена "
+                        f"{int(age // 60)} мин назад, статус {hb.get('status')}")
+                  return None
+              return (f"бот молчит {int(age // 60)} мин "
+                      f"(порог {MAX_AGE // 60} мин)\n"
+                      f"последняя метка: {hb['ts']}")
 
-          state_raw, state_sha = read_file(ST_PATH)
-          if state_raw:
-              try:
-                  last = datetime.strptime(json.loads(state_raw)["ts"],
-                                           "%Y-%m-%dT%H:%M:%SZ").replace(
-                                               tzinfo=timezone.utc)
-                  since = (now - last).total_seconds()
-                  if since < COOLDOWN:
-                      print(f"проблема есть, но прошлый алерт был "
-                            f"{int(since // 60)} мин назад, молчу "
-                            f"(пауза {COOLDOWN // 60} мин)")
-                      sys.exit(0)
-              except Exception as e:
-                  print(f"::warning::не разобрал {ST_PATH}: {e}")
+          bad = 0
+          for c in CHECKS:
+              problem = check_one(c)
+              if not problem:
+                  continue
+              bad += 1
+              # не спамим: не чаще раза в COOLDOWN, у каждого бота свой счёт
+              state_raw, state_sha = read_file(c["state"])
+              if state_raw:
+                  try:
+                      last = datetime.strptime(json.loads(state_raw)["ts"],
+                                               "%Y-%m-%dT%H:%M:%SZ").replace(
+                                                   tzinfo=timezone.utc)
+                      since = (now - last).total_seconds()
+                      if since < COOLDOWN:
+                          print(f"{c['name']}: проблема есть, но прошлый алерт "
+                                f"был {int(since // 60)} мин назад, молчу "
+                                f"(пауза {COOLDOWN // 60} мин)")
+                          continue
+                  except Exception as e:
+                      print(f"::warning::не разобрал {c['state']}: {e}")
 
-          print(f"::warning::{problem}")
-          telegram(
-              "🔴 <b>Бот tgjobs не отвечает</b>\n"
-              f"<code>{problem}</code>\n\n"
-              "Проверить: <code>docker compose logs --tail 50 tgjobs</code>\n"
-              f"<i>Следующее напоминание не раньше чем через "
-              f"{COOLDOWN // 60} мин.</i>")
-          write_file(ST_PATH,
-                     json.dumps({"ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                 "problem": problem}, ensure_ascii=False) + "\n",
-                     state_sha, "watchdog: отметка об алерте")
-          print("алерт отправлен")
+              print(f"::warning::{c['name']}: {problem}")
+              telegram(
+                  f"🔴 <b>Бот {c['name']} не отвечает</b>\n"
+                  f"<code>{problem}</code>\n\n"
+                  f"Проверить: <code>{c['logs']}</code>\n"
+                  f"<i>Следующее напоминание не раньше чем через "
+                  f"{COOLDOWN // 60} мин.</i>")
+              write_file(c["state"],
+                         json.dumps({"ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                     "bot": c["name"]}) + "\n",
+                         state_sha, f"alert: {c['name']}")
+
+          sys.exit(0 if not bad else 0)
           PY
