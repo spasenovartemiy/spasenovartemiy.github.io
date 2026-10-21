@@ -217,6 +217,12 @@ h1.name .italic {
 .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ink); background: var(--bg-card); }
 
+/* Кнопки PDF видны только на резюме под конкретную вакансию. Там адрес
+   файла подставляет генератор и служебный data-slot исчезает, после чего
+   правило ниже не совпадает. В самом шаблоне и на корне домена своего PDF
+   нет, и кнопка вела бы на 404, поэтому здесь они скрыты. */
+.hero-cta a[data-slot^="pdf"] { display: none; }
+
 /* PORTRAIT */
 .portrait-wrap {
   position: relative;
@@ -1080,6 +1086,27 @@ footer .accent { color: var(--rust); }
   .tag-row { flex-direction: column; align-items: flex-start; gap: 4px; }
   .tag-val { text-align: left; }
 }
+
+/* ПЕЧАТЬ. Кнопка «Распечатать» ведёт на PDF, он для бумаги и сделан.
+   Но Ctrl+P никто не отменял, а страница по умолчанию печатается плохо:
+   блоки .reveal получают класс visible только когда их прокрутили, и всё
+   ниже первого экрана ушло бы в печать пустым. То же у .fade-in: пока
+   анимация не отработала, элемент стоит на opacity 0. Здесь оба видимы
+   безусловно, а навигация, кнопки и счётчик открытий с бумаги убраны. */
+@media print {
+  /* transition обязателен к отмене вместе с opacity: без этого значение
+     не прыгает в единицу, а ползёт к ней 0.9 секунды, и снимок для печати
+     успевает лечь на середину перехода. Померено: 0.90 вместо 1. */
+  .reveal,
+  .reveal.visible { opacity: 1 !important; transform: none !important;
+                    transition: none !important; }
+  .fade-in { opacity: 1 !important; animation: none !important;
+             transition: none !important; }
+  nav,
+  .hero-cta,
+  #px-open { display: none !important; }
+  body { background: #fff; }
+}
 </style>
   <meta name="robots" content="noindex, nofollow">
 </head>
@@ -1117,6 +1144,8 @@ footer .accent { color: var(--rust); }
         <div class="hero-cta fade-in d5">
           <a href="#contact" class="btn btn-primary">Связаться</a>
           <a href="#experience" class="btn btn-ghost">Смотреть опыт →</a>
+          <a class="btn btn-ghost btn-pdf" data-slot="pdf-download" href="" download>Скачать PDF</a>
+          <a class="btn btn-ghost btn-pdf" data-slot="pdf-print" href="" target="_blank" rel="noopener">Распечатать</a>
         </div>
       </div>
       <div class="fade-in d3">
