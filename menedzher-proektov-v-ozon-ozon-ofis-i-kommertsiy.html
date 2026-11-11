@@ -217,6 +217,7 @@ h1.name .italic {
 .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ink); background: var(--bg-card); }
 
+
 /* PORTRAIT */
 .portrait-wrap {
   position: relative;
@@ -1080,6 +1081,27 @@ footer .accent { color: var(--rust); }
   .tag-row { flex-direction: column; align-items: flex-start; gap: 4px; }
   .tag-val { text-align: left; }
 }
+
+/* ПЕЧАТЬ. Кнопка «Распечатать» ведёт на PDF, он для бумаги и сделан.
+   Но Ctrl+P никто не отменял, а страница по умолчанию печатается плохо:
+   блоки .reveal получают класс visible только когда их прокрутили, и всё
+   ниже первого экрана ушло бы в печать пустым. То же у .fade-in: пока
+   анимация не отработала, элемент стоит на opacity 0. Здесь оба видимы
+   безусловно, а навигация, кнопки и счётчик открытий с бумаги убраны. */
+@media print {
+  /* transition обязателен к отмене вместе с opacity: без этого значение
+     не прыгает в единицу, а ползёт к ней 0.9 секунды, и снимок для печати
+     успевает лечь на середину перехода. Померено: 0.90 вместо 1. */
+  .reveal,
+  .reveal.visible { opacity: 1 !important; transform: none !important;
+                    transition: none !important; }
+  .fade-in { opacity: 1 !important; animation: none !important;
+             transition: none !important; }
+  nav,
+  .hero-cta,
+  #px-open { display: none !important; }
+  body { background: #fff; }
+}
 </style>
   <meta name="robots" content="noindex, nofollow">
 </head>
@@ -1113,10 +1135,12 @@ footer .accent { color: var(--rust); }
         </div>
         <h1 class="name fade-in d2">Артемий<br><span class="italic">Спасенов</span></h1>
         <div class="hero-role fade-in d3">Менеджер проектов</div>
-        <p class="hero-tagline fade-in d4">Управляю кросс-функциональными проектами в B2B, довожу до измеримых бизнес-результатов. Работаю с данными, декомпозирую задачи и управляю сроками.</p>
+        <p class="hero-tagline fade-in d4">Управляю проектами в B2B end-to-end, от анализа требований до внедрения. Работаю с данными, автоматизацией и кросс-функциональными командами.</p>
         <div class="hero-cta fade-in d5">
           <a href="#contact" class="btn btn-primary">Связаться</a>
           <a href="#experience" class="btn btn-ghost">Смотреть опыт →</a>
+          <a class="btn btn-ghost btn-pdf btn-pdf-download" href="menedzher-proektov-v-ozon-ozon-ofis-i-kommertsiy.pdf" download="Спасенов_Артемий_menedzher-proektov-v-ozon-ozon-ofis-i-kommertsiy.pdf">Скачать PDF</a>
+          <a class="btn btn-ghost btn-pdf btn-pdf-print" href="menedzher-proektov-v-ozon-ozon-ofis-i-kommertsiy.pdf" target="_blank" rel="noopener">Распечатать</a>
         </div>
       </div>
       <div class="fade-in d3">
@@ -1137,9 +1161,9 @@ footer .accent { color: var(--rust); }
   <div class="container">
     <div class="industries-label">Индустрии в портфолио</div>
     <div class="industries-row">
-      <span class="industry-chip accent" data-detail="9 лет и <strong>30+ привлечённых клиентов</strong> с заключёнными договорами"><svg class="ic ic-b2b" viewBox="0 0 16 16" aria-hidden="true"><polyline class="p-line" points="2.2,11.8 6,7.9 9.1,10.2 13.8,4.6"/><polyline class="p-arrow" points="10.4,4.6 13.8,4.6 13.8,8"/></svg><span class="lbl">B2B-консалтинг</span></span>
-      <span class="industry-chip" data-detail="<strong>Inditex</strong> - проекты для розничной сети"><svg class="ic ic-retail" viewBox="0 0 16 16" aria-hidden="true"><g class="p-bag"><path d="M3.3 5.5h9.4l-.8 8.2H4.1z"/><path d="M6 5.5V4a2 2 0 0 1 4 0v1.5"/></g></svg><span class="lbl">Ритейл</span></span>
-      <span class="industry-chip" data-detail="<strong>Сбербанк</strong> и <strong>ПСБ</strong> - корпоративные проекты, переговоры с ЛПР"><svg class="ic ic-bank" viewBox="0 0 16 16" aria-hidden="true"><rect class="p-case" x="2.3" y="5.6" width="11.4" height="7.6" rx="1.2"/><path class="p-handle" d="M6 5.6V4.2a1.2 1.2 0 0 1 1.2-1.2h1.6A1.2 1.2 0 0 1 10 4.2v1.4"/></svg><span class="lbl">Банкинг</span></span>
+      <span class="industry-chip accent" data-detail="<strong>Inditex</strong> - проекты для розничной сети"><svg class="ic ic-retail" viewBox="0 0 16 16" aria-hidden="true"><g class="p-bag"><path d="M3.3 5.5h9.4l-.8 8.2H4.1z"/><path d="M6 5.5V4a2 2 0 0 1 4 0v1.5"/></g></svg><span class="lbl">Ритейл</span></span>
+      <span class="industry-chip" data-detail="9 лет и <strong>30+ привлечённых клиентов</strong> с заключёнными договорами"><svg class="ic ic-b2b" viewBox="0 0 16 16" aria-hidden="true"><polyline class="p-line" points="2.2,11.8 6,7.9 9.1,10.2 13.8,4.6"/><polyline class="p-arrow" points="10.4,4.6 13.8,4.6 13.8,8"/></svg><span class="lbl">B2B-консалтинг</span></span>
+      <span class="industry-chip" data-detail="Магистратура на английском в Словакии плюс 5,5 лет профильного консалтинга"><svg class="ic ic-esg" viewBox="0 0 16 16" aria-hidden="true"><g class="p-leaf"><path d="M13.4 2.7c0 6-3.5 9-7.4 9a3.9 3.9 0 0 1 0-7.8c3.4 0 3.9-1.2 7.4-1.2z"/><path d="M9.6 6.3 2.6 13.6"/></g></svg><span class="lbl">ESG &amp; устойчивое развитие</span></span>
     </div>
     <div class="industry-detail" aria-live="polite"><span class="marker">→</span><span class="txt"></span></div>
   </div>
@@ -1180,19 +1204,19 @@ footer .accent { color: var(--rust); }
     </div>
     <div class="approach-grid">
       <div class="approach-card reveal">
-        <div class="num">01 / Кросс-функциональные проекты</div>
-        <h3>Запускаю и координирую сложные проекты</h3>
-        <p>Вёл проекты с охватом более 28 000 сотрудников, работая с разными департаментами и стейкхолдерами. Самостоятельно организовывал работу участников, декомпозировал задачи и управлял сроками.</p>
+        <div class="num">01 / Управление проектами</div>
+        <h3>End-to-end проекты в срок</h3>
+        <p>Закрыл два проекта бюджетом свыше 20 млн руб каждый в срок и в рамках бюджета. Веду полный цикл: от сбора требований и KPI до внедрения и оценки результата. Работаю с большим количеством стейкхолдеров, отделяю важное от неважного.</p>
       </div>
       <div class="approach-card reveal">
-        <div class="num">02 / Работа с данными</div>
-        <h3>Превращаю данные в инструменты контроля</h3>
-        <p>Уверенно владею Excel, создаю рабочие файлы для контроля KPI. В проектах рассчитывал ROI, управлял бюджетами до 60 млн рублей и готовил executive summary для руководства.</p>
+        <div class="num">02 / Аналитика и данные</div>
+        <h3>Работа с метриками и аналитикой</h3>
+        <p>Анализирую текущую ситуацию по метрикам, выявляю проблемы и рассылаю алерты руководителям. Работаю с большими массивами данных в Excel (ВПР, сводные таблицы), структурирую информацию и формулирую измеримые выводы.</p>
       </div>
       <div class="approach-card reveal">
-        <div class="num">03 / Бизнес-результаты</div>
-        <h3>Довожу проекты до измеримых результатов</h3>
-        <p>Закрыл два крупных проекта бюджетом свыше 20 млн рублей каждый в срок и в рамках бюджета. Управляю рисками и эскалирую проблемы до их критичности.</p>
+        <div class="num">03 / Автоматизация процессов</div>
+        <h3>Прототипы без разработчиков</h3>
+        <p>Создаю автоматизации на n8n, прототипы внутренних инструментов без привлечения программистов. Понимаю разработку изнутри, что помогает выстраивать эффективное взаимодействие с IT-командами и говорить на одном языке.</p>
       </div>
     </div>
   </div>
@@ -1206,7 +1230,7 @@ footer .accent { color: var(--rust); }
     <div class="about-grid">
       <div class="about-text reveal">
         <p>Веду проекты end-to-end: <strong>планирование, команда, ресурсы, сроки, бюджет, результат</strong>. В Tactise Group закрыл два проекта бюджетом свыше 20 млн ₽ каждый. Крупнейший проект в управлении 60 млн ₽.</p>
-        <p>Веду проекты end-to-end: от постановки целей и декомпозиции до сдачи в срок. Работаю с кросс-функциональными командами, управляю рисками и зависимостями. Владею Excel на продвинутом уровне, превращаю данные в рабочие инструменты контроля KPI.</p>
+        <p>Веду проекты с фокусом на данные и аналитику: сбор требований, работа с большими массивами информации, автоматизация процессов. Запускаю проектный офис с нуля, выстраиваю метрики и стандарты управления. Говорю с разработкой на одном языке, создаю прототипы инструментов без привлечения программистов.</p>
         <p>Не привязан к одной отрасли: металлургия, добыча, нефтегаз, банки, ритейл, химия. Быстро погружаюсь в новый домен и выделяю главное. Отдельная сила это <em>автоматизация рутины</em>: свой сервер, пайплайны на n8n, аналитика через Python и SQL.</p>
       </div>
       <div class="about-tags reveal">
@@ -1639,7 +1663,7 @@ footer .accent { color: var(--rust); }
 </script>
 
 
-<img id="px-open" src="https://vtochkucv.ru/px.gif?u=hh%3A138230641" width="1" height="1" alt="" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px">
-<script>(function(){var i=document.getElementById("px-open");if(i)i.src="https://vtochkucv.ru/px.gif?u=hh%3A138230641&n="+Math.random().toString(36).slice(2);})();</script>
+<img id="px-open" src="https://vtochkucv.ru/px.gif?u=hh%3A139281679" width="1" height="1" alt="" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px">
+<script>(function(){var i=document.getElementById("px-open");if(i)i.src="https://vtochkucv.ru/px.gif?u=hh%3A139281679&n="+Math.random().toString(36).slice(2);})();</script>
 </body>
 </html>
